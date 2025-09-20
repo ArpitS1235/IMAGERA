@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Imagera Pro</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-container">
+    <img src="logo.png" class="logo" alt="Logo">
+    <h2>Login to Imagera</h2>
+    <input type="text" id="username" placeholder="Enter Username" required>
+    <input type="password" id="password" placeholder="Enter Password" required>
+    <label><input type="checkbox" id="show-password"> Show Password</label>
+    <button onclick="login()">Login</button>
+  </div>
+</div>
+
+<!-- MAIN WEBSITE -->
+<div id="main-website" style="display:none;">
+  <header class="navbar">
+    <h1>Imagera</h1>
+    <input type="text" id="search-bar" placeholder="Search images..." onkeyup="searchImages()">
+    <nav>
+      <button onclick="filterCategory('all')">All</button>
+      <button onclick="filterCategory('car')">Cars</button>
+      <button onclick="filterCategory('animal')">Animals</button>
+      <button onclick="filterCategory('technology')">Technology</button>
+      <button onclick="filterCategory('nature')">Nature</button>
+      <button onclick="showProfile()">Profile</button>
+    </nav>
+  </header>
+
+  <main class="gallery" id="gallery"></main>
+</div>
+
+<!-- MODAL FOR BUY NOW -->
+<div id="payment-modal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h2>Complete Your Purchase</h2>
+    <p id="selected-item"></p>
+    <p>Select Payment Method:</p>
+    <button onclick="processPayment('Credit Card')">💳 Credit Card</button>
+    <button onclick="processPayment('PayPal')">🅿️ PayPal</button>
+    <button onclick="processPayment('UPI')">📱 UPI</button>
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div id="profile-modal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeProfile()">&times;</span>
+    <h2>User Profile</h2>
+    <p id="profile-username"></p>
+    <h3>Wishlist</h3>
+    <div id="wishlist" class="profile-gallery"></div>
+    <h3>Purchase History</h3>
+    <div id="purchases" class="profile-gallery"></div>
+  </div>
+</div>
+
+<script>
+let currentUser = { username:'', wishlist:[], purchases:[] };
+
+document.getElementById("show-password").addEventListener("change", function(){
+  document.getElementById("password").type = this.checked ? "text" : "password";
+});
+
+function login() {
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+  if(username && password){
+    currentUser.username = username;
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("main-website").style.display = "block";
+    renderGallery();
+  } else alert("Enter username and password!");
+}
+
+// IMAGE DATA WITH DIRECT PATHS
+const categories = {
+  car: ["car.jpeg","car2.jpeg","car3.jpeg","car4.jpeg","car5.jpeg"],
+  animal: ["animal.jpeg","animal2.jpeg","animal3.jpeg","animal4.jpeg","animal5.jpeg"],
+  technology: ["tech.jpeg","tech2.jpeg","tech3.jpeg","tech4.jpeg","tech5.jpeg"],
+  nature: ["nature.jpeg","nature2.jpeg","nature3.jpeg","nature4.jpeg","nature5.jpeg"]
+};
+
+const imagePrices = {
+  car:200,car2:220,car3:210,car4:250,car5:230,
+  animal:150,animal2:170,animal3:160,animal4:180,animal5:155,
+  tech:300,tech2:320,tech3:310,tech4:350,tech5:330,
+  nature:220,nature2:240,nature3:230,nature4:250,nature5:260
+};
+
+// RENDER GALLERY
+function renderGallery(){
+  const gallery = document.getElementById("gallery");
+  gallery.innerHTML = "";
+  for(let cat in categories){
+    categories[cat].forEach(imgFile=>{
+      const imgName = imgFile.split('.')[0]; // "car1"
+      const card = document.createElement("div");
+      card.className=`image-card ${cat}`;
+      card.innerHTML = `
+        <img src="${imgFile}" alt="${imgName}" class="lazy-image">
+        <div class="card-info">
+          <p>Price: $${imagePrices[imgName]}</p>
+          <button onclick="buyNow('${imgName}')">Buy Now</button>
+          <button class="wishlist-btn" onclick="toggleWishlist('${imgName}')">❤</button>
+        </div>
+      `;
+      gallery.appendChild(card);
+    });
+  }
+}
+
+// FILTER CATEGORY
+function filterCategory(category){
+  const cards = document.querySelectorAll(".image-card");
+  cards.forEach(card=>{
+    if(category==='all'||card.classList.contains(category)) card.style.display="block";
+    else card.style.display="none";
+  });
+}
+
+// SEARCH
+function searchImages(){
+  const query = document.getElementById("search-bar").value.toLowerCase();
+  const cards = document.querySelectorAll(".image-card");
+  cards.forEach(card=>{
+    const alt = card.querySelector("img").alt.toLowerCase();
+    card.style.display = alt.includes(query)? "block":"none";
+  });
+}
+
+// BUY NOW
+function buyNow(imgName){
+  document.getElementById("selected-item").innerText = `You selected ${imgName} for $${imagePrices[imgName]}`;
+  document.getElementById("payment-modal").style.display="block";
+}
+
+function processPayment(method){
+  alert(`Payment successful with ${method}!`);
+  currentUser.purchases.push({name: document.getElementById("selected-item").innerText, date: new Date().toLocaleDateString()});
+  closeModal();
+}
+
+function closeModal(){ document.getElementById("payment-modal").style.display="none"; }
+
+// WISHLIST
+function toggleWishlist(imgName){
+  if(currentUser.wishlist.includes(imgName)){
+    currentUser.wishlist = currentUser.wishlist.filter(i=>i!==imgName);
+  } else currentUser.wishlist.push(imgName);
+  alert(`${imgName} updated in your wishlist.`);
+}
+
+// PROFILE
+function showProfile(){
+  document.getElementById("profile-username").innerText = `Username: ${currentUser.username}`;
+  renderProfileItems("wishlist","wishlist");
+  renderProfileItems("purchases","purchases");
+  document.getElementById("profile-modal").style.display="block";
+}
+
+function renderProfileItems(containerId,type){
+  const container = document.getElementById(containerId);
+  container.innerHTML="";
+  let items = currentUser[type];
+  if(type==="purchases") items = items.map(p=>({name:p.name+" ("+p.date+")"}));
+  items.forEach(item=>{
+    const div = document.createElement("div");
+    div.className="profile-item";
+    div.innerHTML=`<p>${item.name || item}</p>`;
+    container.appendChild(div);
+  });
+}
+
+function closeProfile(){ document.getElementById("profile-modal").style.display="none"; }
+
+window.onclick = function(event){
+  const paymentModal = document.getElementById("payment-modal");
+  const profileModal = document.getElementById("profile-modal");
+  if(event.target === paymentModal) paymentModal.style.display="none";
+  if(event.target === profileModal) profileModal.style.display="none";
+}
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
